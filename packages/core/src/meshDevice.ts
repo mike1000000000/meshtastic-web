@@ -107,8 +107,7 @@ export class MeshDevice {
   ): Promise<number> {
     this.log.debug(
       Emitter[Emitter.SendText],
-      `📤 Sending message to ${destination ?? "broadcast"} on channel ${
-        channel?.toString() ?? 0
+      `📤 Sending message to ${destination ?? "broadcast"} on channel ${channel?.toString() ?? 0
       }`,
     );
 
@@ -137,8 +136,7 @@ export class MeshDevice {
   ): Promise<number> {
     this.log.debug(
       Emitter[Emitter.SendWaypoint],
-      `📤 Sending waypoint to ${destination} on channel ${
-        channel?.toString() ?? 0
+      `📤 Sending waypoint to ${destination} on channel ${channel?.toString() ?? 0
       }`,
     );
 
@@ -212,7 +210,7 @@ export class MeshDevice {
     }
     return await this.sendRaw(
       toBinary(Protobuf.Mesh.ToRadioSchema, toRadioMessage),
-      meshPacket.id,
+      meshPacket.id, wantAck
     );
   }
 
@@ -222,6 +220,7 @@ export class MeshDevice {
   public async sendRaw(
     toRadio: Uint8Array,
     id: number = this.generateRandId(),
+    waitForAck: boolean = true,
   ): Promise<number> {
     if (toRadio.length > 512) {
       throw new Error("Message longer than 512 bytes, it will not be sent!");
@@ -229,11 +228,11 @@ export class MeshDevice {
     this.queue.push({
       id,
       data: toRadio,
-    });
+    }, waitForAck);
 
     await this.queue.processQueue(this.transport.toDevice);
 
-    return this.queue.wait(id);
+    return waitForAck ? this.queue.wait(id) : id;
   }
 
   /**
@@ -1071,8 +1070,7 @@ export class MeshDevice {
           default: {
             this.log.error(
               Emitter[Emitter.HandleMeshPacket],
-              `⚠️ Received unhandled AdminMessage, type ${
-                adminMessage.payloadVariant.case ?? "undefined"
+              `⚠️ Received unhandled AdminMessage, type ${adminMessage.payloadVariant.case ?? "undefined"
               }`,
               dataPacket.payload,
             );

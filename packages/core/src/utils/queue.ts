@@ -11,7 +11,7 @@ export class Queue {
   private timeout: number;
 
   constructor() {
-    this.timeout = 60000;
+    this.timeout = 10000;
   }
 
   public getState(): QueueItem[] {
@@ -22,12 +22,12 @@ export class Queue {
     this.queue = [];
   }
 
-  public push(item: Omit<QueueItem, "promise" | "sent" | "added">): void {
+  public push(item: Omit<QueueItem, "promise" | "sent" | "added">, waitForAck = true): void {
     const queueItem: QueueItem = {
       ...item,
       sent: false,
       added: new Date(),
-      promise: new Promise<number>((resolve, reject) => {
+      promise: !waitForAck ? Promise.resolve(item.id) : new Promise<number>((resolve, reject) => {
         this.ackNotifier.subscribe((id) => {
           if (item.id === id) {
             this.remove(item.id);
@@ -83,8 +83,7 @@ export class Queue {
 
   public processError(e: PacketError): void {
     console.error(
-      `Error received for packet ${e.id}: ${
-        Protobuf.Mesh.Routing_Error[e.error]
+      `Error received for packet ${e.id}: ${Protobuf.Mesh.Routing_Error[e.error]
       }`,
     );
     this.errorNotifier.dispatch(e);
